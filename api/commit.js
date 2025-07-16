@@ -5,7 +5,7 @@
 // 이 파일은 Vercel의 Serverless Function으로 동작합니다.
 // Node.js 환경에서 실행됩니다.
 
-// GitHub API 요청을 위한 헬퍼 함수
+// GitHub API 요청을 위한 헬퍼 함수 (오류 로깅 강화)
 async function githubApiRequest(endpoint, token, options = {}) {
     const url = `https://api.github.com${endpoint}`;
     const headers = {
@@ -16,16 +16,24 @@ async function githubApiRequest(endpoint, token, options = {}) {
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // 404 Not Found는 브랜치가 없거나 파일이 없을 때 발생할 수 있으므로, 조금 더 구체적인 에러 메시지를 전달합니다.
+        
+        // ===== 변경점: 서버 로그에 GitHub API 오류 기록 =====
+        console.error('GitHub API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: errorData
+        });
+
         if (response.status === 404) {
              throw new Error(`리소스를 찾을 수 없습니다 (404). 저장소 URL과 브랜치 이름이 올바른지 확인하세요.`);
         }
-        throw new Error(`GitHub API Error: ${response.status} ${response.statusText}. ${errorData.message || ''}`);
+        // GitHub에서 받은 에러 메시지를 우선적으로 사용
+        const errorMessage = errorData.message || response.statusText || 'An unknown error from GitHub API.';
+        throw new Error(`GitHub API Error: ${response.status}. ${errorMessage}`);
     }
     return response.status === 204 ? null : response.json();
 }
 
-// ===== 변경점: 브랜치 정보를 처리하는 로직 추가 =====
 // 대상 브랜치를 결정하는 헬퍼 함수
 async function getTargetBranch(owner, repo, token, branchName) {
     if (branchName) {
@@ -35,7 +43,6 @@ async function getTargetBranch(owner, repo, token, branchName) {
     const repoInfo = await githubApiRequest(`/repos/${owner}/${repo}`, token);
     return repoInfo.default_branch;
 }
-
 
 // Vercel이 이 함수를 API 엔드포인트로 만듭니다.
 export default async function handler(request, response) {
@@ -65,13 +72,11 @@ export default async function handler(request, response) {
             const { owner, repo, branch, commitMessage, files, path } = request.body;
             const targetBranch = await getTargetBranch(owner, repo, token, branch);
 
-            // 1. 대상 브랜치의 최신 커밋 정보 가져오기
             const refData = await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token);
             const latestCommitSha = refData.object.sha;
             const commitData = await githubApiRequest(`/repos/${owner}/${repo}/git/commits/${latestCommitSha}`, token);
             const baseTreeSha = commitData.tree.sha;
 
-            // 2. 각 파일을 GitHub에 Blob으로 생성
             const blobPromises = files.map(file => 
                 githubApiRequest(`/repos/${owner}/${repo}/git/blobs`, token, {
                     method: 'POST',
@@ -83,19 +88,16 @@ export default async function handler(request, response) {
             );
             const newTreeItems = await Promise.all(blobPromises);
 
-            // 3. 새 파일들로 새로운 Tree 생성
             const newTreeData = await githubApiRequest(`/repos/${owner}/${repo}/git/trees`, token, {
                 method: 'POST',
                 body: JSON.stringify({ base_tree: baseTreeSha, tree: newTreeItems })
             });
 
-            // 4. 새로운 Tree로 새 커밋 생성
             const newCommitData = await githubApiRequest(`/repos/${owner}/${repo}/git/commits`, token, {
                 method: 'POST',
                 body: JSON.stringify({ message: commitMessage, tree: newTreeData.sha, parents: [latestCommitSha] })
             });
 
-            // 5. 브랜치가 새 커밋을 가리키도록 업데이트
             await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token, {
                 method: 'PATCH',
                 body: JSON.stringify({ sha: newCommitData.sha })
@@ -104,11 +106,16 @@ export default async function handler(request, response) {
             return response.status(200).json({ commitUrl: newCommitData.html_url });
         }
 
-        // 허용되지 않은 메소드
         response.setHeader('Allow', ['GET', 'POST']);
         return response.status(405).end('Method Not Allowed');
 
     } catch (error) {
-        return response.status(500).json({ message: error.message });
+        // ===== 변경점: 서버에서 발생하는 모든 오류를 로그로 남기고, 더 명확한 메시지 반환 =====
+        console.error("--- API Handler Error ---");
+        console.error(error); // Vercel 로그에서 전체 오류 객체를 볼 수 있도록 함
+        
+        return response.status(500).json({ 
+            message: error.message || '서버에서 예기치 않은 오류가 발생했습니다.' 
+        });
     }
 }
