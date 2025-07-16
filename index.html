@@ -110,7 +110,6 @@
         // --- 저장소 트리 불러오기 ---
         loadTreeBtn.addEventListener('click', async () => {
             const repoUrl = document.getElementById('repoUrl').value;
-            // ===== 변경점: 브랜치 이름 가져오기 =====
             const branchName = document.getElementById('branchName').value.trim();
 
             if (!repoUrl) {
@@ -133,7 +132,6 @@
             treeContainer.classList.add('hidden');
             
             try {
-                // ===== 변경점: API 요청 시 브랜치 정보 추가 =====
                 const treeData = await apiRequest(`/api/commit?owner=${owner}&repo=${repo}&branch=${branchName}`);
                 renderFileTree(treeData.tree);
                 treeContainer.classList.remove('hidden');
@@ -151,7 +149,6 @@
 
             const commitMessage = document.getElementById('commitMessage').value;
             const files = document.getElementById('fileInput').files;
-            // ===== 변경점: 브랜치 이름 가져오기 =====
             const branchName = document.getElementById('branchName').value.trim();
 
             if (!owner || !repo || !commitMessage || files.length === 0) {
@@ -175,14 +172,13 @@
             try {
                 const filesAsBase64 = await Promise.all(filePromises);
 
-                // ===== 변경점: API 요청 시 브랜치 정보 추가 =====
                 const result = await apiRequest('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         owner,
                         repo,
-                        branch: branchName, // 브랜치 정보 추가
+                        branch: branchName,
                         commitMessage,
                         files: filesAsBase64,
                         path: selectedPath
@@ -198,7 +194,6 @@
         });
 
         // --- UI 헬퍼 함수들 (renderFileTree, createTreeHtml, showResult, setLoadingState) ---
-        // 이 함수들은 이전 코드와 동일하게 유지됩니다.
         function renderFileTree(tree) {
             const treeStructure = { children: {} };
             const foldersOnly = tree.filter(item => item.type === 'tree');
