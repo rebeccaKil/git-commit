@@ -1,566 +1,473 @@
 "use client"
-import { Badge } from "@/components/ui/badge"
-import { TorusIcon as Torii } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Calendar, Users, Mountain, Cherry, Plane, Wifi, Coffee, Shield } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { MapPin, Calendar, Users, Star, Plane, Camera, Mountain, Utensils } from "lucide-react"
 
 export default function JapanTravelLanding() {
+  const [selectedPackage, setSelectedPackage] = useState(null)
+
+  const hotels = [
+    {
+      name: "료칸 사쿠라",
+      location: "교토",
+      rating: 4.8,
+      price: "180,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      features: ["온천", "전통 가이세키", "정원뷰"],
+    },
+    {
+      name: "호텔 후지산",
+      location: "가와구치코",
+      rating: 4.6,
+      price: "150,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      features: ["후지산뷰", "온천", "조식포함"],
+    },
+    {
+      name: "시티 호텔 도쿄",
+      location: "신주쿠",
+      rating: 4.4,
+      price: "120,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      features: ["역세권", "무료WiFi", "24시간 프런트"],
+    },
+  ]
+
+  const tours = [
+    {
+      title: "교토 전통문화 체험",
+      duration: "6시간",
+      price: "85,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      highlights: ["기모노 체험", "다도 체험", "전통 사원 투어"],
+    },
+    {
+      title: "후지산 5합목 & 하코네",
+      duration: "10시간",
+      price: "120,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      highlights: ["후지산 전망", "하코네 온천", "아시노코 유람선"],
+    },
+    {
+      title: "오사카 미식 투어",
+      duration: "4시간",
+      price: "65,000원",
+      image: "/placeholder.svg?height=200&width=300",
+      highlights: ["도톤보리 탐방", "타코야키 체험", "현지 맛집"],
+    },
+  ]
+
+  const packages = [
+    {
+      id: 1,
+      title: "교토 & 오사카 3박4일",
+      price: "899,000원",
+      originalPrice: "1,200,000원",
+      image: "/placeholder.svg?height=250&width=400",
+      features: ["항공료 포함", "호텔 3박", "가이드 투어", "식사 6회"],
+      itinerary: [
+        "1일차: 인천→간사이공항, 오사카 도착",
+        "2일차: 교토 전통문화 체험",
+        "3일차: 나라 & 우지 투어",
+        "4일차: 오사카 자유시간, 귀국",
+      ],
+    },
+    {
+      id: 2,
+      title: "도쿄 & 후지산 4박5일",
+      price: "1,299,000원",
+      originalPrice: "1,600,000원",
+      image: "/placeholder.svg?height=250&width=400",
+      features: ["항공료 포함", "호텔 4박", "전용 가이드", "식사 8회"],
+      itinerary: [
+        "1일차: 인천→나리타공항, 도쿄 도착",
+        "2일차: 도쿄 시내 관광",
+        "3일차: 후지산 & 하코네",
+        "4일차: 디즈니랜드",
+        "5일차: 자유시간, 귀국",
+      ],
+    },
+    {
+      id: 3,
+      title: "일본 완전정복 7박8일",
+      price: "2,199,000원",
+      originalPrice: "2,800,000원",
+      image: "/placeholder.svg?height=250&width=400",
+      features: ["항공료 포함", "호텔 7박", "전문 가이드", "식사 14회"],
+      itinerary: [
+        "1-2일차: 도쿄 관광",
+        "3-4일차: 후지산 & 하코네",
+        "5-6일차: 교토 & 나라",
+        "7일차: 오사카 관광",
+        "8일차: 귀국",
+      ],
+    },
+  ]
+
+  const flights = [
+    {
+      airline: "대한항공",
+      route: "인천 → 나리타",
+      departure: "09:30",
+      arrival: "13:00",
+      price: "450,000원",
+      duration: "2시간 30분",
+    },
+    {
+      airline: "아시아나항공",
+      route: "인천 → 간사이",
+      departure: "14:20",
+      arrival: "17:30",
+      price: "420,000원",
+      duration: "2시간 10분",
+    },
+    {
+      airline: "제주항공",
+      route: "인천 → 나고야",
+      departure: "11:15",
+      arrival: "14:45",
+      price: "280,000원",
+      duration: "2시간 30분",
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50 max-w-[750px] mx-auto">
-      {/* Header */}
-      <header className="bg-white/90 backdrop-blur-sm border-b border-red-100 sticky top-0 z-50">
-        <div className="container px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Torii className="h-8 w-8 text-red-600" />
-              <span className="text-lg font-bold text-gray-900">일본여행</span>
-            </div>
-            <nav className="flex items-center space-x-6">
-              <Link href="#cities" className="text-gray-700 hover:text-red-600 transition-colors text-sm">
-                추천 도시
-              </Link>
-              <Link href="#offers" className="text-gray-700 hover:text-red-600 transition-colors text-sm">
-                특별 혜택
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50">
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 z-10" />
-        <Image src="/images/japan-landscape-hero.png" alt="일본 소도시 풍경" fill className="object-cover" priority />
-        <div className="relative z-20 text-center text-white max-w-4xl px-4">
-          <Badge className="mb-4 bg-red-600/90 text-white border-0 text-xs px-4 py-2 shadow-lg">
-            ✨ 좀 더 특별한 여행
-          </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
-            일본 소도시 여행
-            <br />
-            <span className="text-red-300">특가 프로모션</span>
-          </h1>
-          <p className="text-lg md:text-xl mb-8 text-gray-200 drop-shadow-md">
-            숨겨진 보석 같은 일본의 소도시에서 특별한 추억을 만들어보세요
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/placeholder.svg?height=1080&width=1920')",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">일본 소도시 여행</h1>
+          <p className="text-xl md:text-2xl mb-8 font-light">
+            숨겨진 보석 같은 일본의 소도시에서 진정한 일본을 만나보세요
           </p>
-          <div className="flex justify-center">
-            <div className="animate-bounce">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-red-600 hover:bg-red-700 text-lg px-8 py-3">
+              여행 패키지 보기
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-black text-lg px-8 py-3 bg-transparent"
+            >
+              맞춤 여행 상담
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Featured Cities Section */}
-      <section id="cities" className="py-12 bg-white">
-        <div className="container px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">추천 소도시 여행지</h2>
-            <p className="text-base text-gray-600 max-w-2xl mx-auto">
-              각각의 독특한 매력을 가진 일본의 아름다운 소도시들을 만나보세요
-            </p>
-          </div>
-
-          {[
-            {
-              name: "다카야마",
-              description: "일본 알프스의 아름다운 산간 마을",
-              image: "/placeholder.svg?height=300&width=400",
-              highlights: ["산마치스지 거리", "다카야마 진야", "온천 체험"],
-              price: "349,000원",
-              flight: {
-                route: "인천 ICN ✈ 다카야마 TAK",
-                period: "탑승 기간: 25년 6월 1일 ~ 7월 24일",
-                price: "89,900원 부터",
-                note: "*성인 1인 총액 요금 (왕복)",
-                outbound: { departure: "08:45", arrival: "10:30", duration: "1시간 45분 소요" },
-                inbound: { departure: "11:30", arrival: "13:05", duration: "1시간 45분 소요" },
-              },
-              products: [
-                {
-                  type: "hotel",
-                  image: "/placeholder.svg?height=200&width=300",
-                  stars: 4,
-                  title: "다카야마 그린 호텔",
-                  originalPrice: 180000,
-                  discountedPrice: 172800,
-                  discount: 4,
-                },
-                {
-                  type: "tour",
-                  image: "/placeholder.svg?height=200&width=300",
-                  category: "문화체험",
-                  title: "다카야마 전통마을 투어",
-                  originalPrice: 85000,
-                  discountedPrice: 80750,
-                  discount: 5,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.04.15",
-                  nights: "2박3일",
-                  title: "다카야마 온천 힐링 패키지",
-                  originalPrice: 450000,
-                  discountedPrice: 441000,
-                  discount: 2,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.04.20",
-                  nights: "3박4일",
-                  title: "일본 알프스 완전정복",
-                  originalPrice: 680000,
-                  discountedPrice: 666400,
-                  discount: 2,
-                },
-              ],
-            },
-            {
-              name: "이시가키",
-              description: "오키나와의 열대 낙원",
-              image: "/placeholder.svg?height=300&width=400",
-              highlights: ["카비라만", "스노클링", "망고 체험"],
-              price: "429,000원",
-              flight: {
-                route: "인천 ICN ✈ 이시가키 ISG",
-                period: "탑승 기간: 25년 6월 1일 ~ 7월 24일",
-                price: "79,900원 부터",
-                note: "*성인 1인 총액 요금 (왕복)",
-                outbound: { departure: "08:45", arrival: "10:30", duration: "1시간 45분 소요" },
-                inbound: { departure: "11:30", arrival: "13:05", duration: "1시간 45분 소요" },
-              },
-              products: [
-                {
-                  type: "hotel",
-                  image: "/placeholder.svg?height=200&width=300",
-                  stars: 5,
-                  title: "이시가키 리조트 호텔",
-                  originalPrice: 320000,
-                  discountedPrice: 307200,
-                  discount: 4,
-                },
-                {
-                  type: "tour",
-                  image: "/placeholder.svg?height=200&width=300",
-                  category: "해양액티비티",
-                  title: "카비라만 스노클링 투어",
-                  originalPrice: 120000,
-                  discountedPrice: 114000,
-                  discount: 5,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.05.01",
-                  nights: "3박4일",
-                  title: "이시가키 해양 패키지",
-                  originalPrice: 780000,
-                  discountedPrice: 764400,
-                  discount: 2,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.05.10",
-                  nights: "4박5일",
-                  title: "오키나와 아일랜드 호핑",
-                  originalPrice: 950000,
-                  discountedPrice: 931000,
-                  discount: 2,
-                },
-              ],
-            },
-            {
-              name: "도쿠시마",
-              description: "자연과 전통이 어우러진 시코쿠의 보석",
-              image: "/placeholder.svg?height=300&width=400",
-              highlights: ["나루토 소용돌이", "아와오도리", "이야계곡"],
-              price: "289,000원",
-              flight: {
-                route: "인천 ICN ✈ 도쿠시마 TKS",
-                period: "탑승 기간: 25년 6월 1일 ~ 7월 24일",
-                price: "69,900원 부터",
-                note: "*성인 1인 총액 요금 (왕복)",
-                outbound: { departure: "08:45", arrival: "10:30", duration: "1시간 45분 소요" },
-                inbound: { departure: "11:30", arrival: "13:05", duration: "1시간 45분 소요" },
-              },
-              products: [
-                {
-                  type: "hotel",
-                  image: "/placeholder.svg?height=200&width=300",
-                  stars: 3,
-                  title: "도쿠시마 시티 호텔",
-                  originalPrice: 140000,
-                  discountedPrice: 134400,
-                  discount: 4,
-                },
-                {
-                  type: "tour",
-                  image: "/placeholder.svg?height=200&width=300",
-                  category: "자연관광",
-                  title: "나루토 소용돌이 크루즈",
-                  originalPrice: 65000,
-                  discountedPrice: 61750,
-                  discount: 5,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.04.25",
-                  nights: "2박3일",
-                  title: "도쿠시마 자연 탐방",
-                  originalPrice: 380000,
-                  discountedPrice: 372400,
-                  discount: 2,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.05.05",
-                  nights: "3박4일",
-                  title: "시코쿠 순례길 여행",
-                  originalPrice: 520000,
-                  discountedPrice: 509600,
-                  discount: 2,
-                },
-              ],
-            },
-            {
-              name: "다카마쓰",
-              description: "우동과 예술의 도시",
-              image: "/placeholder.svg?height=300&width=400",
-              highlights: ["리쓰린공원", "사누키우동", "나오시마"],
-              price: "319,000원",
-              flight: {
-                route: "인천 ICN ✈ 다카마쓰 TAK",
-                period: "탑승 기간: 25년 6월 1일 ~ 7월 24일",
-                price: "74,900원 부터",
-                note: "*성인 1인 총액 요금 (왕복)",
-                outbound: { departure: "08:45", arrival: "10:30", duration: "1시간 45분 소요" },
-                inbound: { departure: "11:30", arrival: "13:05", duration: "1시간 45분 소요" },
-              },
-              products: [
-                {
-                  type: "hotel",
-                  image: "/placeholder.svg?height=200&width=300",
-                  stars: 4,
-                  title: "다카마쓰 로얄 호텔",
-                  originalPrice: 200000,
-                  discountedPrice: 192000,
-                  discount: 4,
-                },
-                {
-                  type: "tour",
-                  image: "/placeholder.svg?height=200&width=300",
-                  category: "미식투어",
-                  title: "사누키 우동 맛집 투어",
-                  originalPrice: 75000,
-                  discountedPrice: 71250,
-                  discount: 5,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.04.30",
-                  nights: "2박3일",
-                  title: "다카마쓰 예술섬 투어",
-                  originalPrice: 420000,
-                  discountedPrice: 411600,
-                  discount: 2,
-                },
-                {
-                  type: "package",
-                  image: "/placeholder.svg?height=200&width=300",
-                  departure: "2024.05.15",
-                  nights: "3박4일",
-                  title: "세토내해 아트 여행",
-                  originalPrice: 580000,
-                  discountedPrice: 568400,
-                  discount: 2,
-                },
-              ],
-            },
-          ].map((city, cityIndex) => (
-            <div key={cityIndex} className="mb-12">
-              {/* City Card - 먼저 표시 */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden lg:col-span-4">
-                  <div className="flex flex-col md:flex-row">
-                    <div className="relative h-48 md:h-auto md:w-1/3 overflow-hidden">
-                      <Image
-                        src={city.image || "/placeholder.svg"}
-                        alt={city.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-red-600 text-white">{city.price}부터</Badge>
-                      </div>
-                    </div>
-                    <div className="md:w-2/3 p-6">
-                      <CardHeader className="p-0 mb-4">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                          <MapPin className="h-5 w-5 text-red-600" />
-                          {city.name}
-                        </CardTitle>
-                        <CardDescription className="text-base">{city.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <ul className="flex flex-wrap gap-4">
-                          {city.highlights.map((highlight, idx) => (
-                            <li key={idx} className="flex items-center text-sm text-gray-600">
-                              <Cherry className="h-4 w-4 text-pink-500 mr-2" />
-                              {highlight}
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Flight Card - 두 번째로 표시 */}
-              <div className="mb-8">
-                <Card className="border-2 border-pink-200 bg-gradient-to-r from-pink-500 to-red-500 text-white overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Plane className="h-5 w-5" />
-                      <span className="font-semibold">{city.flight.route}</span>
-                    </div>
-                    <p className="text-sm mb-4">{city.flight.period}</p>
-                    <div className="text-right mb-4">
-                      <div className="text-2xl font-bold">{city.flight.price}</div>
-                      <div className="text-xs opacity-90">{city.flight.note}</div>
-                    </div>
-                    <Button className="w-full bg-black hover:bg-gray-800 text-white mb-4">특가 항공권 예약하기</Button>
-
-                    {/* Flight Schedule */}
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <h4 className="font-semibold mb-3">항공 스케줄</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="font-medium mb-1">출발편</div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span>ICN</span>
-                            <Plane className="h-3 w-3" />
-                            <span>TAK</span>
-                          </div>
-                          <div>
-                            {city.flight.outbound.departure} → {city.flight.outbound.arrival}
-                          </div>
-                          <div className="text-xs opacity-90">{city.flight.outbound.duration}</div>
-                        </div>
-                        <div>
-                          <div className="font-medium mb-1">오는편</div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span>TAK</span>
-                            <Plane className="h-3 w-3" />
-                            <span>ICN</span>
-                          </div>
-                          <div>
-                            {city.flight.inbound.departure} → {city.flight.inbound.arrival}
-                          </div>
-                          <div className="text-xs opacity-90">{city.flight.inbound.duration}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Products Grid - 마지막에 표시 */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {city.products.map((product, productIndex) => (
-                  <Card
-                    key={productIndex}
-                    className="group hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden"
-                  >
-                    <div className="relative h-40 overflow-hidden">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 left-2">
-                        <Badge
-                          className={`text-xs ${
-                            product.type === "hotel"
-                              ? "bg-blue-600"
-                              : product.type === "tour"
-                                ? "bg-green-600"
-                                : "bg-purple-600"
-                          } text-white`}
-                        >
-                          {product.type === "hotel" ? "호텔" : product.type === "tour" ? "투어" : "패키지"}
-                        </Badge>
-                      </div>
-                    </div>
-                    <CardContent className="p-4">
-                      {/* Hotel specific info */}
-                      {product.type === "hotel" && (
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={`text-sm ${i < product.stars ? "text-yellow-400" : "text-gray-300"}`}
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Tour specific info */}
-                      {product.type === "tour" && (
-                        <Badge variant="outline" className="mb-2 text-xs">
-                          {product.category}
-                        </Badge>
-                      )}
-
-                      {/* Package specific info */}
-                      {product.type === "package" && (
-                        <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
-                          <span>{product.departure}</span>
-                          <span>•</span>
-                          <span>{product.nights}</span>
-                        </div>
-                      )}
-
-                      <h4 className="font-semibold text-sm mb-3 line-clamp-2">{product.title}</h4>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 line-through">
-                            {product.originalPrice.toLocaleString()}원
-                          </span>
-                          <Badge className="bg-red-100 text-red-600 text-xs">{product.discount}% 할인</Badge>
-                        </div>
-                        <div className="text-base font-bold text-red-600">
-                          {product.discountedPrice.toLocaleString()}원
-                        </div>
-                      </div>
-
-                      <Button
-                        className="w-full mt-3 bg-red-600 hover:bg-red-700 text-xs h-8"
-                        onClick={() => {
-                          // 상품별 상세 페이지로 이동
-                          console.log(`${city.name} - ${product.title} 상세보기`)
-                        }}
-                      >
-                        상세보기
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Travel Services Section */}
-      <section className="py-8 bg-gray-50">
-        <div className="container px-4">
-          <div className="space-y-4">
-            {/* 유심/와이파이 */}
-            <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white overflow-hidden">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm mb-2">전세계 이심/유심/와이파이</p>
-                  <h3 className="text-xl font-bold mb-1">해외여행 필수 준비물</h3>
-                  <h3 className="text-xl font-bold">데이터 로밍 하셨나요?</h3>
-                </div>
-                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
-                  <Wifi className="h-12 w-12" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 라운지 */}
-            <Card className="bg-gradient-to-r from-blue-800 to-blue-600 text-white overflow-hidden">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm mb-2">전 세계 1,300여개 라운지 제휴!</p>
-                  <h3 className="text-xl font-bold mb-1">여행의 시작과 끝을 편하게</h3>
-                  <h3 className="text-xl font-bold">전 세계 공항 라운지 특가</h3>
-                </div>
-                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
-                  <Coffee className="h-12 w-12" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 여행자보험 */}
-            <Card className="bg-gradient-to-r from-cyan-200 to-blue-200 text-gray-800 overflow-hidden">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm mb-2">꼼꼼한 여행이 얼마 남지 않았어요</p>
-                  <h3 className="text-xl font-bold mb-2">24시간 안전한 여행자보험</h3>
-                  <Button className="bg-teal-600 hover:bg-teal-700 text-white">바로가입 →</Button>
-                </div>
-                <div className="w-24 h-24 bg-orange-400 rounded-full flex items-center justify-center">
-                  <Shield className="h-12 w-12 text-white" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Special Offers Section */}
-      <section id="offers" className="py-20 bg-gradient-to-r from-red-600 to-orange-600 text-white">
-        <div className="container px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">특별 혜택 안내</h2>
-            <p className="text-base text-red-100 max-w-2xl mx-auto">
-              지금 예약하시면 다양한 특별 혜택을 받으실 수 있습니다
-            </p>
-          </div>
-
+      {/* Features Section */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">왜 일본 소도시 여행인가요?</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Calendar className="h-12 w-12" />,
-                title: "다이렉트 요금",
-                description: "중간 수수료 없는 직접 예약",
-                benefit: "평균 5.5% 저렴",
-              },
-              {
-                icon: <Users className="h-12 w-12" />,
-                title: "제휴카드 즉시 할인",
-                description: "제휴 카드 결제 시 즉시 할인",
-                benefit: "최대 4만원",
-              },
-              {
-                icon: <Mountain className="h-12 w-12" />,
-                title: "포인트 증정",
-                description: "예약 완료 시 포인트 적립",
-                benefit: "최대 3,000포인트",
-              },
-            ].map((offer, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-                <CardHeader className="text-center">
-                  <div className="mx-auto mb-4 text-red-200">{offer.icon}</div>
-                  <CardTitle className="text-lg">{offer.title}</CardTitle>
-                  <CardDescription className="text-red-100 text-sm">{offer.description}</CardDescription>
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Mountain className="w-12 h-12 mx-auto text-red-600 mb-4" />
+                <CardTitle className="text-xl">진정한 일본 문화</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">관광지가 아닌 현지인들의 실제 생활과 전통문화를 체험할 수 있습니다.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Camera className="w-12 h-12 mx-auto text-red-600 mb-4" />
+                <CardTitle className="text-xl">숨겨진 명소</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">아직 많이 알려지지 않은 아름다운 풍경과 특별한 장소들을 발견하세요.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Utensils className="w-12 h-12 mx-auto text-red-600 mb-4" />
+                <CardTitle className="text-xl">현지 맛집</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">현지인만 아는 진짜 맛집에서 정통 일본 요리를 맛보실 수 있습니다.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Hotels Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">추천 숙소</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {hotels.map((hotel, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img src={hotel.image || "/placeholder.svg"} alt={hotel.name} className="w-full h-48 object-cover" />
+                  <Badge className="absolute top-4 right-4 bg-red-600">★ {hotel.rating}</Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    {hotel.name}
+                    <span className="text-red-600 font-bold">{hotel.price}</span>
+                  </CardTitle>
+                  <CardDescription className="flex items-center">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {hotel.location}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <Badge className="bg-yellow-500 text-yellow-900 text-base px-4 py-2">{offer.benefit}</Badge>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {hotel.features.map((feature, idx) => (
+                      <Badge key={idx} variant="secondary">
+                        {feature}
+                      </Badge>
+                    ))}
+                  </div>
+                  <Button className="w-full mt-4 bg-red-600 hover:bg-red-700">예약하기</Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Tours Section */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">추천 투어</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {tours.map((tour, index) => (
+              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img src={tour.image || "/placeholder.svg"} alt={tour.title} className="w-full h-48 object-cover" />
+                  <Badge className="absolute top-4 right-4 bg-orange-600">{tour.duration}</Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    {tour.title}
+                    <span className="text-orange-600 font-bold">{tour.price}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {tour.highlights.map((highlight, idx) => (
+                      <li key={idx} className="flex items-center text-sm">
+                        <Star className="w-4 h-4 mr-2 text-yellow-500" />
+                        {highlight}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className="w-full bg-orange-600 hover:bg-orange-700">투어 신청</Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Packages Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">여행 패키지</h2>
+          <div className="grid lg:grid-cols-3 gap-8">
+            {packages.map((pkg) => (
+              <Card key={pkg.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img src={pkg.image || "/placeholder.svg"} alt={pkg.title} className="w-full h-48 object-cover" />
+                  <Badge className="absolute top-4 right-4 bg-green-600">특가</Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle>{pkg.title}</CardTitle>
+                  <CardDescription className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-green-600">{pkg.price}</span>
+                    <span className="text-sm line-through text-gray-500">{pkg.originalPrice}</span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 mb-4">
+                    {pkg.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center text-sm">
+                        <Star className="w-4 h-4 mr-2 text-green-500" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 mb-2"
+                    onClick={() => setSelectedPackage(pkg)}
+                  >
+                    패키지 상세보기
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Flights Section */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">항공편 정보</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {flights.map((flight, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{flight.airline}</span>
+                    <Plane className="w-5 h-5 text-blue-600" />
+                  </CardTitle>
+                  <CardDescription>{flight.route}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span>출발:</span>
+                      <span className="font-semibold">{flight.departure}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>도착:</span>
+                      <span className="font-semibold">{flight.arrival}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>소요시간:</span>
+                      <span className="font-semibold">{flight.duration}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>가격:</span>
+                      <span className="font-bold text-blue-600">{flight.price}</span>
+                    </div>
+                  </div>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">항공편 예약</Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Package Detail Modal */}
+      {selectedPackage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                {selectedPackage.title}
+                <Button variant="ghost" size="sm" onClick={() => setSelectedPackage(null)}>
+                  ✕
+                </Button>
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-green-600">{selectedPackage.price}</span>
+                <span className="text-sm line-through text-gray-500">{selectedPackage.originalPrice}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <img
+                src={selectedPackage.image || "/placeholder.svg"}
+                alt={selectedPackage.title}
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
+
+              <h3 className="text-lg font-semibold mb-3">포함사항</h3>
+              <div className="grid grid-cols-2 gap-2 mb-6">
+                {selectedPackage.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center text-sm">
+                    <Star className="w-4 h-4 mr-2 text-green-500" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="text-lg font-semibold mb-3">여행 일정</h3>
+              <div className="space-y-2 mb-6">
+                {selectedPackage.itinerary.map((day, idx) => (
+                  <div key={idx} className="flex items-start text-sm">
+                    <Calendar className="w-4 h-4 mr-2 text-blue-500 mt-0.5" />
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <Button className="w-full bg-green-600 hover:bg-green-700">지금 예약하기</Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-red-600 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-bold mb-6">지금 바로 일본 소도시 여행을 시작하세요!</h2>
+          <p className="text-xl mb-8 opacity-90">특별한 할인 혜택과 함께 잊지 못할 여행의 추억을 만들어보세요</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+              <Users className="w-5 h-5 mr-2" />
+              단체 여행 문의
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-3 bg-transparent"
+            >
+              <Calendar className="w-5 h-5 mr-2" />
+              여행 상담 예약
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">일본 소도시 여행</h3>
+              <p className="text-gray-400 text-sm">진정한 일본을 경험할 수 있는 특별한 여행을 제공합니다.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">여행 정보</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>여행 패키지</li>
+                <li>맞춤 여행</li>
+                <li>단체 여행</li>
+                <li>여행 가이드</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">고객 서비스</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>예약 문의</li>
+                <li>여행 상담</li>
+                <li>취소/환불</li>
+                <li>자주 묻는 질문</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">연락처</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>📞 02-1234-5678</li>
+                <li>✉️ info@japantravel.co.kr</li>
+                <li>🏢 서울시 강남구 테헤란로 123</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+            <p>&copy; 2024 일본 소도시 여행. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
