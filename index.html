@@ -1,13 +1,15 @@
+<!-- ====================================================================== -->
+<!-- 파일 1: index.html (브랜치 입력 필드 추가 및 스크립트 수정) -->
+<!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub 파일 커밋 자동화 도구</title>
+    <title>GitHub 파일 커밋 자동화 도구 (브랜치 지원)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS 스타일은 이전과 동일하게 유지됩니다. */
         body { font-family: 'Inter', sans-serif; }
         .form-input { @apply w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200; }
         .btn { @apply w-full px-4 py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:bg-gray-400; }
@@ -28,17 +30,22 @@
     <div class="w-full max-w-2xl p-8 space-y-6 bg-white rounded-xl shadow-lg">
         <div class="text-center">
             <h1 class="text-3xl font-bold text-gray-800">GitHub 파일 커밋 자동화</h1>
-            <p class="mt-2 text-gray-600">여러 파일을 선택하고 저장소 경로를 지정하여 단일 커밋으로 올립니다.</p>
+            <p class="mt-2 text-gray-600">특정 브랜치에 여러 파일을 선택하여 단일 커밋으로 올립니다.</p>
         </div>
 
         <form id="commitForm" class="space-y-6">
-            <!-- 섹션 1: 저장소 정보 (토큰 입력란 제거됨) -->
+            <!-- 섹션 1: 저장소 정보 -->
             <div class="p-4 border rounded-lg">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">1. 대상 저장소 정보 입력</h2>
                 <div class="space-y-4">
                     <div>
                         <label for="repoUrl" class="block text-sm font-medium text-gray-700">GitHub 저장소 URL</label>
                         <input type="url" id="repoUrl" required class="form-input mt-1" placeholder="https://github.com/owner/repository-name">
+                    </div>
+                    <!-- ===== 변경점: 브랜치 입력 필드 추가 ===== -->
+                    <div>
+                        <label for="branchName" class="block text-sm font-medium text-gray-700">브랜치 이름 (선택 사항)</label>
+                        <input type="text" id="branchName" class="form-input mt-1" placeholder="비워두면 기본 브랜치 (예: main) 사용">
                     </div>
                     <button type="button" id="loadTreeBtn" class="btn-secondary">저장소 구조 불러오기</button>
                 </div>
@@ -75,7 +82,7 @@
     </div>
 
     <script>
-        // --- 주요 변수 선언 (이전과 거의 동일) ---
+        // --- 주요 변수 선언 ---
         const commitForm = document.getElementById('commitForm');
         const statusDiv = document.getElementById('status');
         const submitButton = document.getElementById('submitButton');
@@ -90,7 +97,7 @@
         let selectedPath = '';
         let owner, repo;
 
-        // --- API 요청 헬퍼 (이제 우리 서버 /api/commit 으로 요청) ---
+        // --- API 요청 헬퍼 ---
         async function apiRequest(endpoint, options = {}) {
             const response = await fetch(endpoint, options);
             if (!response.ok) {
@@ -100,9 +107,12 @@
             return response.status === 204 ? null : response.json();
         }
 
-        // --- 저장소 트리 불러오기 (서버에 요청) ---
+        // --- 저장소 트리 불러오기 ---
         loadTreeBtn.addEventListener('click', async () => {
             const repoUrl = document.getElementById('repoUrl').value;
+            // ===== 변경점: 브랜치 이름 가져오기 =====
+            const branchName = document.getElementById('branchName').value.trim();
+
             if (!repoUrl) {
                 showResult('저장소 URL을 먼저 입력해주세요.', 'error');
                 return;
@@ -117,14 +127,14 @@
                 showResult('올바른 GitHub 저장소 URL을 입력해주세요.', 'error');
                 return;
             }
-
+            
             treeInfo.classList.add('hidden');
             treeLoader.classList.remove('hidden');
             treeContainer.classList.add('hidden');
-
+            
             try {
-                // 서버의 '구조-불러오기' 기능에 요청
-                const treeData = await apiRequest(`/api/commit?owner=${owner}&repo=${repo}`);
+                // ===== 변경점: API 요청 시 브랜치 정보 추가 =====
+                const treeData = await apiRequest(`/api/commit?owner=${owner}&repo=${repo}&branch=${branchName}`);
                 renderFileTree(treeData.tree);
                 treeContainer.classList.remove('hidden');
             } catch (error) {
@@ -134,13 +144,15 @@
             }
         });
 
-        // --- 파일 커밋 (서버에 요청) ---
+        // --- 파일 커밋 ---
         commitForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             setLoadingState(true);
 
             const commitMessage = document.getElementById('commitMessage').value;
             const files = document.getElementById('fileInput').files;
+            // ===== 변경점: 브랜치 이름 가져오기 =====
+            const branchName = document.getElementById('branchName').value.trim();
 
             if (!owner || !repo || !commitMessage || files.length === 0) {
                 showResult('모든 필드를 채우고 파일을 선택해주세요.', 'error');
@@ -148,7 +160,6 @@
                 return;
             }
 
-            // 파일을 Base64로 변환
             const filePromises = Array.from(files).map(file => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -164,13 +175,14 @@
             try {
                 const filesAsBase64 = await Promise.all(filePromises);
 
-                // 서버에 커밋 요청 데이터 전송
+                // ===== 변경점: API 요청 시 브랜치 정보 추가 =====
                 const result = await apiRequest('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         owner,
                         repo,
+                        branch: branchName, // 브랜치 정보 추가
                         commitMessage,
                         files: filesAsBase64,
                         path: selectedPath
@@ -186,11 +198,10 @@
         });
 
         // --- UI 헬퍼 함수들 (renderFileTree, createTreeHtml, showResult, setLoadingState) ---
-        // 이 함수들은 이전 코드와 동일하게 유지됩니다. 아래에 붙여넣어 주세요.
+        // 이 함수들은 이전 코드와 동일하게 유지됩니다.
         function renderFileTree(tree) {
             const treeStructure = { children: {} };
             const foldersOnly = tree.filter(item => item.type === 'tree');
-
             foldersOnly.forEach(item => {
                 let currentLevel = treeStructure;
                 const pathParts = item.path.split('/');
@@ -201,10 +212,8 @@
                     currentLevel = currentLevel.children[part];
                 });
             });
-
             const rootUl = document.createElement('ul');
             rootUl.style.paddingLeft = '0';
-
             const rootLi = document.createElement('li');
             const rootFolder = document.createElement('span');
             rootFolder.textContent = `${repo} (루트)`;
@@ -212,7 +221,6 @@
             rootFolder.dataset.path = '';
             rootLi.appendChild(rootFolder);
             rootUl.appendChild(rootLi);
-
             const childUl = createTreeHtml(treeStructure.children, '');
             if (childUl.hasChildNodes()) {
                 rootLi.appendChild(childUl);
@@ -225,10 +233,8 @@
                     }
                 });
             }
-
             fileTreeDiv.innerHTML = '';
             fileTreeDiv.appendChild(rootUl);
-
             fileTreeDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('folder')) {
                     document.querySelectorAll('.folder.selected').forEach(el => el.classList.remove('selected'));
@@ -238,19 +244,16 @@
                 }
             });
         }
-
         function createTreeHtml(node, currentPath) {
             const ul = document.createElement('ul');
             for (const key in node) {
                 const li = document.createElement('li');
                 const folderSpan = document.createElement('span');
                 const newPath = currentPath ? `${currentPath}/${key}` : key;
-
                 folderSpan.textContent = key;
                 folderSpan.className = 'folder';
                 folderSpan.dataset.path = newPath;
                 li.appendChild(folderSpan);
-
                 const children = node[key].children;
                 if (Object.keys(children).length > 0) {
                     folderSpan.classList.add('open');
@@ -268,12 +271,10 @@
             }
             return ul;
         }
-
         function showResult(message, type) {
             statusDiv.innerHTML = message;
             statusDiv.className = `mt-6 p-3 text-center text-sm rounded-lg ${ type === 'success' ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100' }`;
         }
-
         function setLoadingState(isLoading) {
             if (isLoading) {
                 statusDiv.innerHTML = '';
