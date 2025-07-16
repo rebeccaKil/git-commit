@@ -1,3 +1,7 @@
+<!-- ====================================================================== -->
+<!-- 파일 2: api/commit.js (브랜치 정보를 받아서 처리하도록 수정) -->
+<!-- ====================================================================== -->
+```javascript
 // 이 파일은 Vercel의 Serverless Function으로 동작합니다.
 // Node.js 환경에서 실행됩니다.
 
@@ -12,14 +16,29 @@ async function githubApiRequest(endpoint, token, options = {}) {
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        // 404 Not Found는 브랜치가 없거나 파일이 없을 때 발생할 수 있으므로, 조금 더 구체적인 에러 메시지를 전달합니다.
+        if (response.status === 404) {
+             throw new Error(`리소스를 찾을 수 없습니다 (404). 저장소 URL과 브랜치 이름이 올바른지 확인하세요.`);
+        }
         throw new Error(`GitHub API Error: ${response.status} ${response.statusText}. ${errorData.message || ''}`);
     }
     return response.status === 204 ? null : response.json();
 }
 
+// ===== 변경점: 브랜치 정보를 처리하는 로직 추가 =====
+// 대상 브랜치를 결정하는 헬퍼 함수
+async function getTargetBranch(owner, repo, token, branchName) {
+    if (branchName) {
+        return branchName; // 사용자가 브랜치를 지정한 경우 해당 브랜치 사용
+    }
+    // 사용자가 브랜치를 지정하지 않은 경우, 저장소의 기본 브랜치를 조회
+    const repoInfo = await githubApiRequest(`/repos/${owner}/${repo}`, token);
+    return repoInfo.default_branch;
+}
+
+
 // Vercel이 이 함수를 API 엔드포인트로 만듭니다.
 export default async function handler(request, response) {
-    // process.env.GITHUB_TOKEN는 Vercel에 설정할 환경 변수입니다.
     const token = process.env.GITHUB_TOKEN;
 
     if (!token) {
@@ -29,24 +48,25 @@ export default async function handler(request, response) {
     try {
         // GET 요청: 저장소 파일 트리 구조를 가져옴
         if (request.method === 'GET') {
-            const { owner, repo } = request.query;
-            const repoInfo = await githubApiRequest(`/repos/${owner}/${repo}`, token);
-            const defaultBranch = repoInfo.default_branch;
-            const refData = await githubApiRequest(`/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`, token);
-            const treeSha = refData.object.sha;
-            const treeData = await githubApiRequest(`/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`, token);
+            const { owner, repo, branch } = request.query;
+            const targetBranch = await getTargetBranch(owner, repo, token, branch);
 
+            const refData = await githubApiRequest(`/repos/${owner}/${repo}/git/ref/heads/${targetBranch}`, token);
+            const commitSha = refData.object.sha;
+            const commitData = await githubApiRequest(`/repos/${owner}/${repo}/git/commits/${commitSha}`, token);
+            const treeSha = commitData.tree.sha;
+            const treeData = await githubApiRequest(`/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`, token);
+            
             return response.status(200).json(treeData);
         }
 
         // POST 요청: 파일을 커밋함
         if (request.method === 'POST') {
-            const { owner, repo, commitMessage, files, path } = request.body;
+            const { owner, repo, branch, commitMessage, files, path } = request.body;
+            const targetBranch = await getTargetBranch(owner, repo, token, branch);
 
-            // 1. 기본 브랜치 및 최신 커밋 정보 가져오기
-            const repoInfo = await githubApiRequest(`/repos/${owner}/${repo}`, token);
-            const defaultBranch = repoInfo.default_branch;
-            const refData = await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${defaultBranch}`, token);
+            // 1. 대상 브랜치의 최신 커밋 정보 가져오기
+            const refData = await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token);
             const latestCommitSha = refData.object.sha;
             const commitData = await githubApiRequest(`/repos/${owner}/${repo}/git/commits/${latestCommitSha}`, token);
             const baseTreeSha = commitData.tree.sha;
@@ -76,7 +96,7 @@ export default async function handler(request, response) {
             });
 
             // 5. 브랜치가 새 커밋을 가리키도록 업데이트
-            await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${defaultBranch}`, token, {
+            await githubApiRequest(`/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`, token, {
                 method: 'PATCH',
                 body: JSON.stringify({ sha: newCommitData.sha })
             });
