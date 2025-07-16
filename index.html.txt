@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 파일 커밋 자동화 도구</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS 스타일은 이전과 동일하게 유지됩니다. */
+        body { font-family: 'Inter', sans-serif; }
+        .form-input { @apply w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200; }
+        .btn { @apply w-full px-4 py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:bg-gray-400; }
+        .btn-secondary { @apply w-full px-4 py-2 font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-200; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #fileTree { max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; }
+        #fileTree ul { padding-left: 1rem; }
+        #fileTree li { list-style: none; padding: 0.25rem 0; }
+        .folder { cursor: pointer; font-weight: 500; padding: 2px 4px; }
+        .folder::before { content: '▸ '; display: inline-block; transition: transform 0.2s; }
+        .folder.open::before { transform: rotate(90deg); }
+        .folder.selected { background-color: #dbeafe; border-radius: 0.25rem; }
+        .path-display { @apply mt-2 p-2 bg-gray-100 text-gray-800 rounded-md text-sm break-words; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-12">
+    <div class="w-full max-w-2xl p-8 space-y-6 bg-white rounded-xl shadow-lg">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">GitHub 파일 커밋 자동화</h1>
+            <p class="mt-2 text-gray-600">여러 파일을 선택하고 저장소 경로를 지정하여 단일 커밋으로 올립니다.</p>
+        </div>
+
+        <form id="commitForm" class="space-y-6">
+            <!-- 섹션 1: 저장소 정보 (토큰 입력란 제거됨) -->
+            <div class="p-4 border rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">1. 대상 저장소 정보 입력</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="repoUrl" class="block text-sm font-medium text-gray-700">GitHub 저장소 URL</label>
+                        <input type="url" id="repoUrl" required class="form-input mt-1" placeholder="https://github.com/owner/repository-name">
+                    </div>
+                    <button type="button" id="loadTreeBtn" class="btn-secondary">저장소 구조 불러오기</button>
+                </div>
+            </div>
+
+            <!-- 섹션 2 & 3은 이전과 동일 -->
+            <div class="p-4 border rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">2. 업로드 경로 선택</h2>
+                <div id="treeContainer" class="hidden">
+                    <p class="text-sm text-gray-600 mb-2">아래 트리에서 파일을 업로드할 폴더를 선택하세요. (루트: /)</p>
+                    <div id="fileTree"></div>
+                    <div class="path-display">
+                        <strong>선택된 경로:</strong> <span id="selectedPathDisplay">/</span>
+                    </div>
+                </div>
+                <div id="treeLoader" class="text-center py-4 hidden"><div class="loader inline-block"></div><p class="mt-2 text-sm text-gray-600">저장소 구조를 불러오는 중...</p></div>
+                <p id="treeInfo" class="text-sm text-gray-500">저장소 URL을 입력하고 구조를 불러와주세요.</p>
+            </div>
+            <div class="p-4 border rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 파일 및 커밋 정보</h2>
+                <div class="space-y-4">
+                    <div><label for="fileInput" class="block text-sm font-medium text-gray-700">업로드할 파일</label><input type="file" id="fileInput" required multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mt-1"></div>
+                    <div><label for="commitMessage" class="block text-sm font-medium text-gray-700">커밋 메시지</label><input type="text" id="commitMessage" required class="form-input mt-1" placeholder="feat: Add new components"></div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitButton" class="btn flex items-center justify-center">
+                <span id="buttonText">파일 커밋</span>
+                <div id="loader" class="loader hidden ml-3"></div>
+            </button>
+        </form>
+
+        <div id="status" class="mt-6 text-center text-sm"></div>
+    </div>
+
+    <script>
+        // --- 주요 변수 선언 (이전과 거의 동일) ---
+        const commitForm = document.getElementById('commitForm');
+        const statusDiv = document.getElementById('status');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const loader = document.getElementById('loader');
+        const loadTreeBtn = document.getElementById('loadTreeBtn');
+        const treeContainer = document.getElementById('treeContainer');
+        const fileTreeDiv = document.getElementById('fileTree');
+        const treeLoader = document.getElementById('treeLoader');
+        const treeInfo = document.getElementById('treeInfo');
+        const selectedPathDisplay = document.getElementById('selectedPathDisplay');
+        let selectedPath = '';
+        let owner, repo;
+
+        // --- API 요청 헬퍼 (이제 우리 서버 /api/commit 으로 요청) ---
+        async function apiRequest(endpoint, options = {}) {
+            const response = await fetch(endpoint, options);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`API Error: ${response.status}. ${errorData.message || 'An error occurred.'}`);
+            }
+            return response.status === 204 ? null : response.json();
+        }
+
+        // --- 저장소 트리 불러오기 (서버에 요청) ---
+        loadTreeBtn.addEventListener('click', async () => {
+            const repoUrl = document.getElementById('repoUrl').value;
+            if (!repoUrl) {
+                showResult('저장소 URL을 먼저 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const url = new URL(repoUrl);
+                const pathParts = url.pathname.split('/').filter(p => p);
+                if (url.hostname !== 'github.com' || pathParts.length < 2) throw new Error();
+                [owner, repo] = pathParts;
+            } catch (error) {
+                showResult('올바른 GitHub 저장소 URL을 입력해주세요.', 'error');
+                return;
+            }
+
+            treeInfo.classList.add('hidden');
+            treeLoader.classList.remove('hidden');
+            treeContainer.classList.add('hidden');
+
+            try {
+                // 서버의 '구조-불러오기' 기능에 요청
+                const treeData = await apiRequest(`/api/commit?owner=${owner}&repo=${repo}`);
+                renderFileTree(treeData.tree);
+                treeContainer.classList.remove('hidden');
+            } catch (error) {
+                showResult(`오류: ${error.message}`, 'error');
+            } finally {
+                treeLoader.classList.add('hidden');
+            }
+        });
+
+        // --- 파일 커밋 (서버에 요청) ---
+        commitForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoadingState(true);
+
+            const commitMessage = document.getElementById('commitMessage').value;
+            const files = document.getElementById('fileInput').files;
+
+            if (!owner || !repo || !commitMessage || files.length === 0) {
+                showResult('모든 필드를 채우고 파일을 선택해주세요.', 'error');
+                setLoadingState(false);
+                return;
+            }
+
+            // 파일을 Base64로 변환
+            const filePromises = Array.from(files).map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve({
+                        name: file.name,
+                        content: reader.result.split(',')[1]
+                    });
+                    reader.onerror = reject;
+                });
+            });
+
+            try {
+                const filesAsBase64 = await Promise.all(filePromises);
+
+                // 서버에 커밋 요청 데이터 전송
+                const result = await apiRequest('/api/commit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        owner,
+                        repo,
+                        commitMessage,
+                        files: filesAsBase64,
+                        path: selectedPath
+                    })
+                });
+
+                showResult(`${files.length}개의 파일이 성공적으로 커밋되었습니다! <a href="${result.commitUrl}" target="_blank" class="font-bold underline hover:text-green-600">새 커밋 보기</a>`, 'success');
+            } catch (error) {
+                showResult(`커밋 중 오류 발생: ${error.message}`, 'error');
+            } finally {
+                setLoadingState(false);
+            }
+        });
+
+        // --- UI 헬퍼 함수들 (renderFileTree, createTreeHtml, showResult, setLoadingState) ---
+        // 이 함수들은 이전 코드와 동일하게 유지됩니다. 아래에 붙여넣어 주세요.
+        function renderFileTree(tree) {
+            const treeStructure = { children: {} };
+            const foldersOnly = tree.filter(item => item.type === 'tree');
+
+            foldersOnly.forEach(item => {
+                let currentLevel = treeStructure;
+                const pathParts = item.path.split('/');
+                pathParts.forEach(part => {
+                    if (!currentLevel.children[part]) {
+                        currentLevel.children[part] = { children: {} };
+                    }
+                    currentLevel = currentLevel.children[part];
+                });
+            });
+
+            const rootUl = document.createElement('ul');
+            rootUl.style.paddingLeft = '0';
+
+            const rootLi = document.createElement('li');
+            const rootFolder = document.createElement('span');
+            rootFolder.textContent = `${repo} (루트)`;
+            rootFolder.className = 'folder selected';
+            rootFolder.dataset.path = '';
+            rootLi.appendChild(rootFolder);
+            rootUl.appendChild(rootLi);
+
+            const childUl = createTreeHtml(treeStructure.children, '');
+            if (childUl.hasChildNodes()) {
+                rootLi.appendChild(childUl);
+                rootFolder.classList.add('open');
+                rootFolder.addEventListener('click', (e) => {
+                    if (e.target === rootFolder) {
+                        rootFolder.classList.toggle('open');
+                        const subTree = rootFolder.nextElementSibling;
+                        if(subTree) subTree.style.display = rootFolder.classList.contains('open') ? 'block' : 'none';
+                    }
+                });
+            }
+
+            fileTreeDiv.innerHTML = '';
+            fileTreeDiv.appendChild(rootUl);
+
+            fileTreeDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('folder')) {
+                    document.querySelectorAll('.folder.selected').forEach(el => el.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedPath = e.target.dataset.path;
+                    selectedPathDisplay.textContent = selectedPath === '' ? '/' : `/${selectedPath}`;
+                }
+            });
+        }
+
+        function createTreeHtml(node, currentPath) {
+            const ul = document.createElement('ul');
+            for (const key in node) {
+                const li = document.createElement('li');
+                const folderSpan = document.createElement('span');
+                const newPath = currentPath ? `${currentPath}/${key}` : key;
+
+                folderSpan.textContent = key;
+                folderSpan.className = 'folder';
+                folderSpan.dataset.path = newPath;
+                li.appendChild(folderSpan);
+
+                const children = node[key].children;
+                if (Object.keys(children).length > 0) {
+                    folderSpan.classList.add('open');
+                    folderSpan.addEventListener('click', (e) => {
+                        if (e.target === folderSpan) {
+                            folderSpan.classList.toggle('open');
+                            const subTree = folderSpan.nextElementSibling;
+                            if(subTree) subTree.style.display = folderSpan.classList.contains('open') ? 'block' : 'none';
+                        }
+                    });
+                    const subUl = createTreeHtml(children, newPath);
+                    li.appendChild(subUl);
+                }
+                ul.appendChild(li);
+            }
+            return ul;
+        }
+
+        function showResult(message, type) {
+            statusDiv.innerHTML = message;
+            statusDiv.className = `mt-6 p-3 text-center text-sm rounded-lg ${ type === 'success' ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100' }`;
+        }
+
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                statusDiv.innerHTML = '';
+                statusDiv.className = 'mt-6 text-center text-sm';
+                buttonText.textContent = '커밋 중...';
+                loader.classList.remove('hidden');
+                submitButton.disabled = true;
+            } else {
+                buttonText.textContent = '파일 커밋';
+                loader.classList.add('hidden');
+                submitButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
