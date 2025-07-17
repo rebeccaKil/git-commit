@@ -7,7 +7,7 @@
 // GitHub API 요청을 위한 헬퍼 함수
 async function githubApiRequest(endpoint, token, options = {}) {
     // ===== 변경점: 잘못된 URL 포맷을 올바른 문자열로 최종 수정 =====
-    const url = '[https://api.github.com](https://api.github.com)' + endpoint; 
+    const url = 'https://api.github.com' + endpoint;
     const headers = {
         'Authorization': 'token ' + token,
         'Accept': 'application/vnd.github.v3+json',
