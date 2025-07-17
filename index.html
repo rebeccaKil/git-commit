@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (브랜치 입력 필드 추가 및 스크립트 수정) -->
+<!-- 파일 1: index.html (SyntaxError 수정) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -42,7 +42,6 @@
                         <label for="repoUrl" class="block text-sm font-medium text-gray-700">GitHub 저장소 URL</label>
                         <input type="url" id="repoUrl" required class="form-input mt-1" placeholder="https://github.com/owner/repository-name">
                     </div>
-                    <!-- ===== 변경점: 브랜치 입력 필드 추가 ===== -->
                     <div>
                         <label for="branchName" class="block text-sm font-medium text-gray-700">브랜치 이름 (선택 사항)</label>
                         <input type="text" id="branchName" class="form-input mt-1" placeholder="비워두면 기본 브랜치 (예: main) 사용">
@@ -186,6 +185,7 @@
                 });
 
                 showResult(`${files.length}개의 파일이 성공적으로 커밋되었습니다! <a href="${result.commitUrl}" target="_blank" class="font-bold underline hover:text-green-600">새 커밋 보기</a>`, 'success');
+            // ===== 변경점: catch 구문에 중괄호 {} 추가 =====
             } catch (error) {
                 showResult(`커밋 중 오류 발생: ${error.message}`, 'error');
             } finally {
