@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (Maximum call stack size exceeded 오류 수정) -->
+<!-- 파일 1: index.html (폴더 선택 기능 오류 수정) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -9,9 +9,20 @@
     <title>GitHub 파일 커밋 자동화 도구 (편집 기능)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/jsx/jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closebrackets.min.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .form-input, #fileEditor { @apply w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200; }
+        .form-input { @apply w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200; }
         .btn { @apply w-full px-4 py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:bg-gray-400; }
         .btn-secondary { @apply w-full px-4 py-2 font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-200; }
         .btn-edit { @apply w-full px-4 py-3 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200 disabled:bg-gray-400; }
@@ -26,6 +37,12 @@
         .folder.open::before { transform: rotate(90deg); }
         .file::before { content: '📄'; margin-right: 6px; }
         .path-display { @apply mt-2 p-2 bg-gray-100 text-gray-800 rounded-md text-sm break-words; }
+        .CodeMirror {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            height: 400px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen py-12">
@@ -63,11 +80,11 @@
                 <div id="treeLoader" class="text-center py-4 hidden"><div class="loader inline-block"></div></div>
             </div>
 
-            <!-- ===== 신규 기능: 파일 편집기 ===== -->
+            <!-- 파일 편집기 -->
             <div id="editorSection" class="p-4 border rounded-lg hidden">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 파일 수정 및 커밋</h2>
                 <p class="text-sm text-gray-600 mb-2">선택된 파일: <strong id="editingFileName"></strong></p>
-                <textarea id="fileEditor" rows="15" class="font-mono text-sm"></textarea>
+                <div id="editor-container"></div>
                 <input type="hidden" id="fileSha">
                 <input type="hidden" id="filePath">
                 <div class="mt-4">
@@ -80,7 +97,7 @@
                 </button>
             </div>
 
-            <!-- 섹션 4: 새 파일 업로드 -->
+            <!-- 새 파일 업로드 -->
             <div class="p-4 border rounded-lg">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 새 파일 업로드</h2>
                 <div class="space-y-4">
@@ -110,19 +127,15 @@
         const fileTreeDiv = document.getElementById('fileTree');
         const treeLoader = document.getElementById('treeLoader');
         const selectedPathDisplay = document.getElementById('selectedPathDisplay');
-        
-        // 편집기 섹션
         const editorSection = document.getElementById('editorSection');
         const editingFileName = document.getElementById('editingFileName');
-        const fileEditor = document.getElementById('fileEditor');
+        const editorContainer = document.getElementById('editor-container');
         const fileSha = document.getElementById('fileSha');
         const filePath = document.getElementById('filePath');
         const editCommitMessage = document.getElementById('editCommitMessage');
         const editCommitBtn = document.getElementById('editCommitBtn');
         const editButtonText = document.getElementById('editButtonText');
         const editLoader = document.getElementById('editLoader');
-
-        // 업로드 섹션
         const fileInput = document.getElementById('fileInput');
         const uploadCommitMessage = document.getElementById('uploadCommitMessage');
         const uploadCommitBtn = document.getElementById('uploadCommitBtn');
@@ -130,6 +143,7 @@
         const uploadLoader = document.getElementById('uploadLoader');
 
         let owner, repo, uploadPath = '';
+        let editorInstance = null;
 
         // API 요청 헬퍼
         async function apiRequest(endpoint, options = {}) {
@@ -165,8 +179,6 @@
             } catch (error) { showResult(`오류: ${error.message}`, 'error');
             } finally { treeLoader.classList.add('hidden'); }
         });
-
-        // ===== 변경점: 파일 트리 렌더링 로직 전체 수정 =====
 
         // 파일 트리 구조 생성
         function buildTree(tree) {
@@ -210,13 +222,6 @@
                 if (childNode.type === 'tree' && Object.keys(childNode.children).length > 0) {
                     const subUl = createSubTreeHtml(childNode);
                     subUl.style.display = 'none';
-                    span.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (e.target === span) {
-                            span.classList.toggle('open');
-                            subUl.style.display = subUl.style.display === 'none' ? 'block' : 'none';
-                        }
-                    });
                     li.appendChild(subUl);
                 }
                 ul.appendChild(li);
@@ -224,7 +229,7 @@
             return ul;
         }
 
-        // 메인 파일 트리 렌더링 함수
+        // ===== 변경점: 파일 트리 렌더링 및 이벤트 처리 로직 수정 =====
         function renderFileTree(tree) {
             const treeStructure = buildTree(tree);
             fileTreeDiv.innerHTML = '';
@@ -242,32 +247,36 @@
             const childrenUl = createSubTreeHtml(treeStructure);
             rootLi.appendChild(childrenUl);
             
-            rootSpan.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (e.target === rootSpan) {
-                    rootSpan.classList.toggle('open');
-                    childrenUl.style.display = childrenUl.style.display === 'none' ? 'block' : 'none';
-                }
-            });
-
             rootUl.appendChild(rootLi);
             fileTreeDiv.appendChild(rootUl);
 
+            // 이벤트 위임을 사용하여 모든 클릭을 한 곳에서 처리
             fileTreeDiv.addEventListener('click', (e) => {
                 const target = e.target.closest('.tree-item');
                 if (!target) return;
-
+                
+                // 모든 아이템에서 'selected' 클래스 제거
                 document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+                // 클릭된 아이템에 'selected' 클래스 추가
                 target.classList.add('selected');
 
                 const path = target.dataset.path;
                 const type = target.dataset.type;
 
                 if (type === 'tree') {
+                    // 폴더를 클릭한 경우
                     uploadPath = path;
                     selectedPathDisplay.textContent = path === '' ? '/' : `/${path}`;
                     editorSection.classList.add('hidden');
+
+                    // 하위 목록(ul)을 찾아서 열고 닫기
+                    const subUl = target.nextElementSibling;
+                    if (subUl && subUl.tagName === 'UL') {
+                        target.classList.toggle('open');
+                        subUl.style.display = subUl.style.display === 'none' ? 'block' : 'none';
+                    }
                 } else if (type === 'blob') {
+                    // 파일을 클릭한 경우
                     uploadPath = path.substring(0, path.lastIndexOf('/'));
                     selectedPathDisplay.textContent = uploadPath === '' ? '/' : `/${uploadPath}`;
                     loadFileForEditing(path);
@@ -275,18 +284,44 @@
             });
         }
 
-        // 파일 내용 불러오기
+        // 파일 확장자에 따라 CodeMirror 모드 결정
+        function getModeForFilename(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'js': case 'json': return 'javascript';
+                case 'jsx': case 'tsx': return 'jsx';
+                case 'html': case 'xml': return 'xml';
+                case 'css': return 'css';
+                default: return 'javascript';
+            }
+        }
+
+        // 파일 내용 불러와서 CodeMirror에 표시
         async function loadFileForEditing(path) {
             editingFileName.textContent = '불러오는 중...';
             editorSection.classList.remove('hidden');
             try {
                 const branchName = document.getElementById('branchName').value.trim();
                 const data = await apiRequest(`/api/commit?owner=${owner}&repo=${repo}&branch=${branchName}&path=${encodeURIComponent(path)}`);
+                
                 editingFileName.textContent = path;
-                fileEditor.value = data.content;
                 fileSha.value = data.sha;
                 filePath.value = path;
                 editCommitMessage.value = `Update ${path.split('/').pop()}`;
+
+                if (editorInstance) {
+                    editorInstance.toTextArea();
+                    editorContainer.innerHTML = '';
+                }
+
+                editorInstance = CodeMirror(editorContainer, {
+                    value: data.content,
+                    mode: getModeForFilename(path),
+                    theme: 'material-darker',
+                    lineNumbers: true,
+                    autoCloseBrackets: true,
+                });
+
             } catch (error) {
                 showResult(`파일 내용 불러오기 오류: ${error.message}`, 'error');
                 editorSection.classList.add('hidden');
@@ -297,6 +332,7 @@
         editCommitBtn.addEventListener('click', async () => {
             setLoadingState(true, 'edit');
             try {
+                const editedContent = editorInstance.getValue();
                 const result = await apiRequest('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -304,7 +340,7 @@
                         owner, repo,
                         branch: document.getElementById('branchName').value.trim(),
                         commitMessage: editCommitMessage.value,
-                        editedContent: fileEditor.value,
+                        editedContent: editedContent,
                         path: filePath.value,
                         sha: fileSha.value
                     })
@@ -346,7 +382,7 @@
                     })
                 });
                 showResult(`${files.length}개의 파일이 성공적으로 업로드되었습니다! <a href="${result.commitUrl}" target="_blank" class="font-bold">새 커밋 보기</a>`, 'success');
-                fileInput.value = ''; // 입력 필드 초기화
+                fileInput.value = '';
             } catch (error) {
                 showResult(`업로드 커밋 오류: ${error.message}`, 'error');
             } finally {
