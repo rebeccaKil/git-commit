@@ -142,14 +142,14 @@ export default function RootLayout({
                 device = "pcWeb";
               }
 
-              window.dataLayer = window.dataLayer || [];
-              dataLayer = [{
-                'userID' : gtmMemberId != null ? gtmMemberId : "",
-                'appName' : appName,
-                'dimension1' : gtmMemberNo != null ? atob(gtmMemberNo) : "",
-                'dimension10' : 'tna',
-                'dimension11' : device
-              }];
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                  userID: gtmMemberId != null ? gtmMemberId : "",
+                  appName: appName,
+                  dimension1: gtmMemberNo != null ? atob(gtmMemberNo) : "",
+                  dimension10: "tna",
+                  dimension11: device
+                });
               `}
             </Script>
             <Script id="sc2" type="text/javascript">
