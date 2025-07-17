@@ -1,19 +1,22 @@
 // ======================================================================
-// 파일 2: api/commit.js (URL Parsing 오류 수정)
+// 파일 2: api/commit.js (변경 없음)
 // ======================================================================
 // 이 파일은 Vercel의 Serverless Function으로 동작합니다.
 // Node.js 환경에서 실행됩니다.
 
-// GitHub API 요청을 위한 헬퍼 함수 (오류 로깅 강화)
+// GitHub API 요청을 위한 헬퍼 함수
 async function githubApiRequest(endpoint, token, options = {}) {
-    // ===== 변경점: 잘못된 URL 포맷 수정 =====
-    const url = '[https://api.github.com](https://api.github.com)' + endpoint;
+    const url = '[https://api.github.com](https://api.github.com)' + endpoint; 
     const headers = {
         'Authorization': 'token ' + token,
         'Accept': 'application/vnd.github.v3+json',
         ...options.headers,
     };
+
+    // fetch API를 사용하여 GitHub에 요청
     const response = await fetch(url, { ...options, headers });
+
+    // 응답이 정상이 아닐 경우 오류 처리
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
@@ -55,7 +58,7 @@ export default async function handler(request, response) {
             const { owner, repo, branch } = request.query;
             const targetBranch = await getTargetBranch(owner, repo, token, branch);
 
-            const refData = await githubApiRequest('/repos/' + owner + '/' + repo + '/git/ref/heads/' + targetBranch, token);
+            const refData = await githubApiRequest('/repos/' + owner + '/' + repo + '/git/refs/heads/' + targetBranch, token);
             const commitSha = refData.object.sha;
             const commitData = await githubApiRequest('/repos/' + owner + '/' + repo + '/git/commits/' + commitSha, token);
             const treeSha = commitData.tree.sha;
