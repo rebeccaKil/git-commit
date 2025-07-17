@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (폴더 선택 기능 오류 수정) -->
+<!-- 파일 1: index.html (툴팁 기능 추가) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -55,8 +55,17 @@
         <form id="mainForm" class="space-y-6">
             <!-- 섹션 1: 저장소 정보 -->
             <div class="p-4 border rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">1. 대상 저장소 정보 입력</h2>
-                <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b pb-2 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">1. 대상 저장소 정보 입력</h2>
+                    <!-- ===== 변경점: 툴팁 추가 ===== -->
+                    <div class="relative group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="text-gray-400 cursor-help" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.055.55.113.75.182.207.07.368.198.486.36.118.162.178.375.178.632 0 .25-.06.482-.18.674a1.05 1.05 0 0 1-.54.46c-.197.075-.463.127-.786.158l-.348.032-.054.392.348-.032c.34-.03.654-.09.91-.182.257-.093.465-.25.615-.473a1.8 1.8 0 0 0 .253-.734c0-.298-.07-.558-.21-.782-.14-.223-.33-.4-.57-.527-.24-.127-.52-.212-.83-.256l-.31-.042.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+                        <div class="absolute bottom-full left-1/2 z-10 w-max max-w-xs -translate-x-1/2 p-2 mb-2 text-xs font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            저장소 URL 형식: https://github.com/{Repository이름}/{Branch이름}
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4 mt-4">
                     <div>
                         <label for="repoUrl" class="block text-sm font-medium text-gray-700">GitHub 저장소 URL</label>
                         <input type="url" id="repoUrl" required class="form-input mt-1" placeholder="https://github.com/owner/repository-name">
@@ -71,7 +80,16 @@
 
             <!-- 섹션 2: 파일 탐색기 -->
             <div class="p-4 border rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">2. 파일 선택</h2>
+                <div class="flex items-center gap-2 border-b pb-2 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">2. 파일 선택</h2>
+                     <!-- ===== 변경점: 툴팁 추가 ===== -->
+                    <div class="relative group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="text-gray-400 cursor-help" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.055.55.113.75.182.207.07.368.198.486.36.118.162.178.375.178.632 0 .25-.06.482-.18.674a1.05 1.05 0 0 1-.54.46c-.197.075-.463.127-.786.158l-.348.032-.054.392.348-.032c.34-.03.654-.09.91-.182.257-.093.465-.25.615-.473a1.8 1.8 0 0 0 .253-.734c0-.298-.07-.558-.21-.782-.14-.223-.33-.4-.57-.527-.24-.127-.52-.212-.83-.256l-.31-.042.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+                        <div class="absolute bottom-full left-1/2 z-10 w-max max-w-xs -translate-x-1/2 p-2 mb-2 text-xs font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            GNB/FOOTER 셋팅은 components 아래 업로드, app/layout.tsx 파일은 내용 수정(return 안에 children 부분)
+                        </div>
+                    </div>
+                </div>
                 <p class="text-sm text-gray-600 mb-2">폴더를 클릭하면 새 파일 업로드 경로로 지정되고, 파일을 클릭하면 아래에 편집기가 나타납니다.</p>
                 <div id="fileTree"></div>
                 <div class="path-display">
@@ -228,8 +246,7 @@
             }
             return ul;
         }
-
-        // ===== 변경점: 파일 트리 렌더링 및 이벤트 처리 로직 수정 =====
+        
         function renderFileTree(tree) {
             const treeStructure = buildTree(tree);
             fileTreeDiv.innerHTML = '';
@@ -250,33 +267,26 @@
             rootUl.appendChild(rootLi);
             fileTreeDiv.appendChild(rootUl);
 
-            // 이벤트 위임을 사용하여 모든 클릭을 한 곳에서 처리
             fileTreeDiv.addEventListener('click', (e) => {
                 const target = e.target.closest('.tree-item');
                 if (!target) return;
                 
-                // 모든 아이템에서 'selected' 클래스 제거
                 document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
-                // 클릭된 아이템에 'selected' 클래스 추가
                 target.classList.add('selected');
 
                 const path = target.dataset.path;
                 const type = target.dataset.type;
 
                 if (type === 'tree') {
-                    // 폴더를 클릭한 경우
                     uploadPath = path;
                     selectedPathDisplay.textContent = path === '' ? '/' : `/${path}`;
                     editorSection.classList.add('hidden');
-
-                    // 하위 목록(ul)을 찾아서 열고 닫기
                     const subUl = target.nextElementSibling;
                     if (subUl && subUl.tagName === 'UL') {
                         target.classList.toggle('open');
                         subUl.style.display = subUl.style.display === 'none' ? 'block' : 'none';
                     }
                 } else if (type === 'blob') {
-                    // 파일을 클릭한 경우
                     uploadPath = path.substring(0, path.lastIndexOf('/'));
                     selectedPathDisplay.textContent = uploadPath === '' ? '/' : `/${uploadPath}`;
                     loadFileForEditing(path);
@@ -296,7 +306,6 @@
             }
         }
 
-        // 파일 내용 불러와서 CodeMirror에 표시
         async function loadFileForEditing(path) {
             editingFileName.textContent = '불러오는 중...';
             editorSection.classList.remove('hidden');
@@ -309,18 +318,19 @@
                 filePath.value = path;
                 editCommitMessage.value = `Update ${path.split('/').pop()}`;
 
-                if (editorInstance) {
-                    editorInstance.toTextArea();
-                    editorContainer.innerHTML = '';
+                if (!editorInstance) {
+                    editorInstance = CodeMirror(editorContainer, {
+                        value: data.content,
+                        mode: getModeForFilename(path),
+                        theme: 'material-darker',
+                        lineNumbers: true,
+                        autoCloseBrackets: true,
+                    });
+                } else {
+                    editorInstance.setValue(data.content);
+                    editorInstance.setOption('mode', getModeForFilename(path));
+                    setTimeout(() => editorInstance.refresh(), 1);
                 }
-
-                editorInstance = CodeMirror(editorContainer, {
-                    value: data.content,
-                    mode: getModeForFilename(path),
-                    theme: 'material-darker',
-                    lineNumbers: true,
-                    autoCloseBrackets: true,
-                });
 
             } catch (error) {
                 showResult(`파일 내용 불러오기 오류: ${error.message}`, 'error');
