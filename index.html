@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (클라이언트 측 URL 파싱 오류 수정) -->
+<!-- 파일 1: index.html (Maximum call stack size exceeded 오류 수정) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -19,8 +19,8 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #fileTree { max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; }
         #fileTree ul { padding-left: 1rem; }
-        #fileTree li { list-style: none; padding: 0.25rem 0; display: flex; align-items: center; }
-        .tree-item { cursor: pointer; padding: 2px 4px; border-radius: 0.25rem; }
+        #fileTree li { list-style: none; padding: 0.25rem 0; }
+        .tree-item { cursor: pointer; padding: 2px 4px; border-radius: 0.25rem; display: inline-flex; align-items: center; width: 100%;}
         .tree-item.selected { background-color: #dbeafe; }
         .folder::before { content: '▸ '; display: inline-block; transition: transform 0.2s; }
         .folder.open::before { transform: rotate(90deg); }
@@ -133,7 +133,6 @@
 
         // API 요청 헬퍼
         async function apiRequest(endpoint, options = {}) {
-            // ===== 변경점: 상대 경로가 아닌 절대 경로로 URL을 명시적으로 생성하여 안정성 확보 =====
             const fullUrl = window.location.origin + endpoint;
             const response = await fetch(fullUrl, options);
             if (!response.ok) {
@@ -167,39 +166,11 @@
             } finally { treeLoader.classList.add('hidden'); }
         });
 
-        // 파일 트리 렌더링
-        function renderFileTree(tree) {
-            const treeStructure = buildTree(tree);
-            fileTreeDiv.innerHTML = '';
-            const rootUl = createTreeHtml(treeStructure, '');
-            fileTreeDiv.appendChild(rootUl);
+        // ===== 변경점: 파일 트리 렌더링 로직 전체 수정 =====
 
-            // 이벤트 위임 설정
-            fileTreeDiv.addEventListener('click', (e) => {
-                const target = e.target.closest('.tree-item');
-                if (!target) return;
-
-                document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
-                target.classList.add('selected');
-
-                const path = target.dataset.path;
-                const type = target.dataset.type;
-
-                if (type === 'tree') {
-                    uploadPath = path;
-                    selectedPathDisplay.textContent = path === '' ? '/' : `/${path}`;
-                    editorSection.classList.add('hidden');
-                } else if (type === 'blob') {
-                    uploadPath = path.substring(0, path.lastIndexOf('/'));
-                    selectedPathDisplay.textContent = `/${uploadPath}`;
-                    loadFileForEditing(path);
-                }
-            });
-        }
-        
         // 파일 트리 구조 생성
         function buildTree(tree) {
-            const treeStructure = { name: repo, type: 'tree', children: {} };
+            const treeStructure = { name: repo, type: 'tree', path: '', children: {} };
             tree.forEach(item => {
                 let currentLevel = treeStructure;
                 const pathParts = item.path.split('/');
@@ -217,28 +188,17 @@
             return treeStructure;
         }
 
-        // 파일 트리 HTML 생성
-        function createTreeHtml(node, currentPath) {
+        // 재귀적으로 서브트리 HTML 생성
+        function createSubTreeHtml(parentNode) {
             const ul = document.createElement('ul');
-            if (currentPath !== '') ul.style.paddingLeft = '1rem';
+            ul.style.paddingLeft = '1rem';
 
-            // 루트 노드 처리
-            if(currentPath === '') {
-                const rootLi = document.createElement('li');
-                const rootSpan = document.createElement('span');
-                rootSpan.textContent = node.name + ' (루트)';
-                rootSpan.className = 'tree-item folder selected';
-                rootSpan.dataset.path = '';
-                rootSpan.dataset.type = 'tree';
-                rootLi.appendChild(rootSpan);
-                const childrenUl = createTreeHtml({children: node.children}, '');
-                rootLi.appendChild(childrenUl);
-                ul.appendChild(rootLi);
-                return ul;
-            }
+            const children = Object.values(parentNode.children).sort((a, b) => {
+                if (a.type === b.type) return a.name.localeCompare(b.name);
+                return a.type === 'tree' ? -1 : 1;
+            });
 
-            for (const key in node.children) {
-                const childNode = node.children[key];
+            for (const childNode of children) {
                 const li = document.createElement('li');
                 const span = document.createElement('span');
                 span.textContent = childNode.name;
@@ -248,20 +208,71 @@
                 li.appendChild(span);
 
                 if (childNode.type === 'tree' && Object.keys(childNode.children).length > 0) {
-                    const subUl = createTreeHtml(childNode, childNode.path);
-                    subUl.style.display = 'none'; // 기본적으로 닫힘
-                    span.classList.add('open'); // 아이콘 표시용
+                    const subUl = createSubTreeHtml(childNode);
+                    subUl.style.display = 'none';
                     span.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         if (e.target === span) {
                             span.classList.toggle('open');
                             subUl.style.display = subUl.style.display === 'none' ? 'block' : 'none';
                         }
-                    }, true);
+                    });
                     li.appendChild(subUl);
                 }
                 ul.appendChild(li);
             }
             return ul;
+        }
+
+        // 메인 파일 트리 렌더링 함수
+        function renderFileTree(tree) {
+            const treeStructure = buildTree(tree);
+            fileTreeDiv.innerHTML = '';
+            
+            const rootUl = document.createElement('ul');
+            rootUl.style.paddingLeft = '0';
+            const rootLi = document.createElement('li');
+            const rootSpan = document.createElement('span');
+            rootSpan.textContent = treeStructure.name + ' (루트)';
+            rootSpan.className = 'tree-item folder selected open';
+            rootSpan.dataset.path = '';
+            rootSpan.dataset.type = 'tree';
+            rootLi.appendChild(rootSpan);
+
+            const childrenUl = createSubTreeHtml(treeStructure);
+            rootLi.appendChild(childrenUl);
+            
+            rootSpan.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (e.target === rootSpan) {
+                    rootSpan.classList.toggle('open');
+                    childrenUl.style.display = childrenUl.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+
+            rootUl.appendChild(rootLi);
+            fileTreeDiv.appendChild(rootUl);
+
+            fileTreeDiv.addEventListener('click', (e) => {
+                const target = e.target.closest('.tree-item');
+                if (!target) return;
+
+                document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+                target.classList.add('selected');
+
+                const path = target.dataset.path;
+                const type = target.dataset.type;
+
+                if (type === 'tree') {
+                    uploadPath = path;
+                    selectedPathDisplay.textContent = path === '' ? '/' : `/${path}`;
+                    editorSection.classList.add('hidden');
+                } else if (type === 'blob') {
+                    uploadPath = path.substring(0, path.lastIndexOf('/'));
+                    selectedPathDisplay.textContent = uploadPath === '' ? '/' : `/${uploadPath}`;
+                    loadFileForEditing(path);
+                }
+            });
         }
 
         // 파일 내용 불러오기
