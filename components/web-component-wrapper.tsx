@@ -1,35 +1,39 @@
 "use client"
 
-import { useEffect, useRef, type ReactNode } from "react"
+import type React from "react"
+
+import { useEffect, useRef } from "react"
 
 interface WebComponentWrapperProps {
   tagName: string
-  attributes?: Record<string, any>
-  fallback?: ReactNode
+  attributes?: Record<string, string>
+  children?: React.ReactNode
+  className?: string
 }
 
-export default function WebComponentWrapper({ tagName, attributes = {}, fallback }: WebComponentWrapperProps) {
+export default function WebComponentWrapper({
+  tagName,
+  attributes = {},
+  children,
+  className,
+}: WebComponentWrapperProps) {
   const elementRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const element = elementRef.current
     if (!element) return
 
-    // Set attributes on the web component
+    // 속성 설정
     Object.entries(attributes).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        element.setAttribute(key, String(value))
-      }
+      element.setAttribute(key, value)
     })
   }, [attributes])
 
-  // Create the custom element using React.createElement
   const CustomElement = tagName as any
 
   return (
-    <div>
-      <CustomElement ref={elementRef} {...attributes} />
-      {fallback && <noscript>{fallback}</noscript>}
-    </div>
+    <CustomElement ref={elementRef} className={className}>
+      {children}
+    </CustomElement>
   )
 }
