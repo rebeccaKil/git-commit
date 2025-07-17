@@ -10,6 +10,7 @@ import PriviaPcGnb from "@/components/privia-pc-gnb";
 
 export const metadata: Metadata = {
   title: '일본 소도시 여행',
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
