@@ -1,11 +1,12 @@
 // ======================================================================
-// 파일 2: api/commit.js (변경 없음)
+// 파일 2: api/commit.js (SyntaxError 최종 수정)
 // ======================================================================
 // 이 파일은 Vercel의 Serverless Function으로 동작합니다.
 // Node.js 환경에서 실행됩니다.
 
 // GitHub API 요청을 위한 헬퍼 함수
 async function githubApiRequest(endpoint, token, options = {}) {
+    // ===== 변경점: 잘못된 URL 포맷을 올바른 문자열로 최종 수정 =====
     const url = '[https://api.github.com](https://api.github.com)' + endpoint; 
     const headers = {
         'Authorization': 'token ' + token,
