@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (Vercel 환경 변수 설정 기능 추가) -->
+<!-- 파일 1: index.html (Client ID 수정) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -36,7 +36,7 @@
         .tree-item.selected { background-color: #dbeafe; }
         .folder::before { content: '▸ '; display: inline-block; transition: transform 0.2s; }
         .folder.open::before { transform: rotate(90deg); }
-        .file::before { content: '📄'; margin-right: 6px; }
+        .file::before { content: '�'; margin-right: 6px; }
         .path-display { @apply mt-2 p-2 bg-gray-100 text-gray-800 rounded-md text-sm break-words; }
         .CodeMirror {
             border: 1px solid #e5e7eb;
@@ -129,7 +129,7 @@
                 </button>
             </div>
 
-            <!-- ===== 변경점: Vercel 연동 섹션 UI/UX 개선 ===== -->
+            <!-- Vercel 배포 섹션 -->
             <div class="p-4 border rounded-lg">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">4. Vercel 연동 (선택)</h2>
                 <div class="space-y-4 mt-4">
@@ -195,14 +195,15 @@
         const vercelToken = document.getElementById('vercelToken');
         const vercelProjectId = document.getElementById('vercelProjectId');
         const vercelNewProjectName = document.getElementById('vercelNewProjectName');
-        const vercelEnvVars = document.getElementById('vercelEnvVars'); // 환경 변수 textarea
+        const vercelEnvVars = document.getElementById('vercelEnvVars');
         const createVercelProjectBtn = document.getElementById('createVercelProjectBtn');
 
         let owner, repo, uploadPath = '';
         let editorInstance = null;
         let userToken = null;
         
-        const GITHUB_CLIENT_ID = 'Ov23li26tA5aX2aQ3xZ2'; // 여기에 GitHub OAuth App의 Client ID를 넣으세요.
+        // ===== 변경점: Client ID를 본인의 것으로 교체해야 합니다. =====
+        const GITHUB_CLIENT_ID = 'Ov23li4bxTS1GtYqgQi4'; // 👈 여기에 GitHub OAuth App의 Client ID를 넣으세요.
 
         // 페이지 로드 시 로그인 상태 확인
         window.onload = async () => {
@@ -234,6 +235,10 @@
 
         // 로그인/로그아웃 버튼 이벤트
         loginBtn.addEventListener('click', () => {
+            if (GITHUB_CLIENT_ID === 'YOUR_GITHUB_CLIENT_ID') {
+                alert('스크립트의 GITHUB_CLIENT_ID를 본인의 ID로 교체해야 합니다.');
+                return;
+            }
             const redirectUri = window.location.origin + window.location.pathname;
             const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
             window.location.href = githubAuthUrl;
@@ -264,6 +269,7 @@
         // API 요청 헬퍼 (사용자 토큰 포함)
         async function apiRequest(endpoint, options = {}) {
             const headers = { ...options.headers };
+            // /api/commit 요청에만 사용자 토큰을 포함
             if (userToken && endpoint.startsWith('/api/commit')) {
                 headers['Authorization'] = `token ${userToken}`;
             }
@@ -276,7 +282,7 @@
             return response.status === 204 ? null : response.json();
         }
 
-        // (이하 다른 함수들은 이전과 거의 동일, API 요청 시 userToken이 자동으로 포함됨)
+        // (이하 다른 함수들은 이전과 거의 동일)
         loadTreeBtn.addEventListener('click', async () => {
             const repoUrl = document.getElementById('repoUrl').value;
             const branchName = document.getElementById('branchName').value.trim();
@@ -344,7 +350,7 @@
                         vercel_token: vercelToken.value,
                         new_project_name: vercelNewProjectName.value,
                         owner, repo,
-                        environment_variables: vercelEnvVars.value // 환경 변수 추가
+                        environment_variables: vercelEnvVars.value
                     })
                 });
                 vercelProjectId.value = result.projectId;
@@ -428,3 +434,4 @@
     </script>
 </body>
 </html>
+�
