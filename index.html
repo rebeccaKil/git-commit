@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (Client ID 수정) -->
+<!-- 파일 1: index.html (UI/UX 최종 개선) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -36,7 +36,7 @@
         .tree-item.selected { background-color: #dbeafe; }
         .folder::before { content: '▸ '; display: inline-block; transition: transform 0.2s; }
         .folder.open::before { transform: rotate(90deg); }
-        .file::before { content: '�'; margin-right: 6px; }
+        .file::before { content: '📄'; margin-right: 6px; }
         .path-display { @apply mt-2 p-2 bg-gray-100 text-gray-800 rounded-md text-sm break-words; }
         .CodeMirror {
             border: 1px solid #e5e7eb;
@@ -97,6 +97,7 @@
             <!-- 파일 편집기 -->
             <div id="editorSection" class="p-4 border rounded-lg hidden">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 파일 수정</h2>
+                <p class="text-sm text-gray-600 mb-2">선택된 파일: <strong id="editingFileName"></strong></p>
                 <div id="editor-container"></div>
                 <input type="hidden" id="fileSha">
                 <input type="hidden" id="filePath">
@@ -143,10 +144,13 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-3 bg-gray-50 rounded-lg space-y-2">
-                            <label for="vercelNewProjectName" class="text-sm font-medium text-gray-700">1. 새 프로젝트 생성 (처음 한 번)</label>
+                            <label class="text-sm font-medium text-gray-700">1. 새 프로젝트 생성 (처음 한 번)</label>
                             <input type="text" id="vercelNewProjectName" class="form-input" placeholder="새 Vercel 프로젝트 이름">
-                            <label for="vercelEnvVars" class="text-xs text-gray-600">환경 변수 (선택)</label>
-                            <textarea id="vercelEnvVars" class="form-input font-mono text-xs" rows="3" placeholder="KEY=VALUE&#10;ANOTHER_KEY=ANOTHER_VALUE"></textarea>
+                            <label class="text-xs text-gray-600">환경 변수 (선택)</label>
+                            <div id="vercelEnvVarsContainer" class="space-y-2">
+                                <!-- 동적 입력 필드가 여기에 추가됩니다. -->
+                            </div>
+                            <button type="button" id="addEnvVarBtn" class="text-sm font-medium text-blue-600 hover:underline">+ 추가</button>
                             <button type="button" id="createVercelProjectBtn" class="btn-secondary !w-auto !py-1.5 !px-3">생성 및 연결</button>
                         </div>
                          <div class="p-3 bg-gray-50 rounded-lg space-y-2">
@@ -195,15 +199,15 @@
         const vercelToken = document.getElementById('vercelToken');
         const vercelProjectId = document.getElementById('vercelProjectId');
         const vercelNewProjectName = document.getElementById('vercelNewProjectName');
-        const vercelEnvVars = document.getElementById('vercelEnvVars');
+        const vercelEnvVarsContainer = document.getElementById('vercelEnvVarsContainer');
+        const addEnvVarBtn = document.getElementById('addEnvVarBtn');
         const createVercelProjectBtn = document.getElementById('createVercelProjectBtn');
 
         let owner, repo, uploadPath = '';
         let editorInstance = null;
         let userToken = null;
         
-        // ===== 변경점: Client ID를 본인의 것으로 교체해야 합니다. =====
-        const GITHUB_CLIENT_ID = 'Ov23li4bxTS1GtYqgQi4'; // 👈 여기에 GitHub OAuth App의 Client ID를 넣으세요.
+        const GITHUB_CLIENT_ID = 'YOUR_GITHUB_CLIENT_ID'; // 👈 여기에 GitHub OAuth App의 Client ID를 넣으세요.
 
         // 페이지 로드 시 로그인 상태 확인
         window.onload = async () => {
@@ -269,7 +273,6 @@
         // API 요청 헬퍼 (사용자 토큰 포함)
         async function apiRequest(endpoint, options = {}) {
             const headers = { ...options.headers };
-            // /api/commit 요청에만 사용자 토큰을 포함
             if (userToken && endpoint.startsWith('/api/commit')) {
                 headers['Authorization'] = `token ${userToken}`;
             }
@@ -337,9 +340,38 @@
                 editorSection.classList.add('hidden');
             }
         }
+        
+        addEnvVarBtn.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <input type="text" class="form-input env-key" placeholder="KEY">
+                <input type="text" class="form-input env-value" placeholder="VALUE">
+                <button type="button" class="remove-env-var-btn text-red-500 hover:text-red-700 text-2xl font-bold">&times;</button>
+            `;
+            vercelEnvVarsContainer.appendChild(div);
+        });
+
+        vercelEnvVarsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-env-var-btn')) {
+                e.target.parentElement.remove();
+            }
+        });
+
         createVercelProjectBtn.addEventListener('click', async () => {
             if (!owner || !repo) { showResult('먼저 GitHub 저장소 정보를 불러와주세요.', 'error'); return; }
             if (!vercelToken.value || !vercelNewProjectName.value) { showResult('Vercel 토큰과 새 프로젝트 이름을 입력해주세요.', 'error'); return; }
+            
+            const envVars = [];
+            const rows = vercelEnvVarsContainer.querySelectorAll('.flex');
+            rows.forEach(row => {
+                const key = row.querySelector('.env-key').value.trim();
+                const value = row.querySelector('.env-value').value.trim();
+                if (key && value) {
+                    envVars.push({ key, value });
+                }
+            });
+
             setLoadingState(true, 'vercel_create');
             try {
                 const result = await apiRequest('/api/commit', {
@@ -350,7 +382,7 @@
                         vercel_token: vercelToken.value,
                         new_project_name: vercelNewProjectName.value,
                         owner, repo,
-                        environment_variables: vercelEnvVars.value
+                        environment_variables: envVars
                     })
                 });
                 vercelProjectId.value = result.projectId;
@@ -434,4 +466,3 @@
     </script>
 </body>
 </html>
-�
