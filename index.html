@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!-- 파일 1: index.html (UI/UX 최종 개선) -->
+<!-- 파일 1: index.html (Vercel UI 최종 개선) -->
 <!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -97,7 +97,6 @@
             <!-- 파일 편집기 -->
             <div id="editorSection" class="p-4 border rounded-lg hidden">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 파일 수정</h2>
-                <p class="text-sm text-gray-600 mb-2">선택된 파일: <strong id="editingFileName"></strong></p>
                 <div id="editor-container"></div>
                 <input type="hidden" id="fileSha">
                 <input type="hidden" id="filePath">
@@ -113,7 +112,10 @@
 
             <!-- 새 파일 업로드 -->
             <div class="p-4 border rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 새 파일 업로드</h2>
+                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">3. 새 파일 업로드</h2>
+                    <a href="https://tidesquare.atlassian.net/wiki/spaces/TE/pages/5457576066/AI" target="_blank" class="text-sm text-blue-600 hover:underline">파일 다운로드</a>
+                </div>
                 <div class="space-y-4">
                     <div>
                         <label for="fileInput" class="block text-sm font-medium text-gray-700">업로드할 파일</label>
@@ -142,15 +144,26 @@
                         <p class="text-xs text-gray-500 mt-1">모든 Vercel 작업(프로젝트 생성, 배포)에 필요합니다.</p>
                         <input type="password" id="vercelToken" class="form-input mt-1" placeholder="Vercel 토큰 입력">
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-3 bg-gray-50 rounded-lg space-y-2">
+                    
+                    <!-- ===== 변경점: Vercel 연동 UI 구조 변경 ===== -->
+                    <div class="space-y-4">
+                        <div class="p-3 bg-gray-50 rounded-lg space-y-3">
                             <label class="text-sm font-medium text-gray-700">1. 새 프로젝트 생성 (처음 한 번)</label>
                             <input type="text" id="vercelNewProjectName" class="form-input" placeholder="새 Vercel 프로젝트 이름">
-                            <label class="text-xs text-gray-600">환경 변수 (선택)</label>
-                            <div id="vercelEnvVarsContainer" class="space-y-2">
-                                <!-- 동적 입력 필드가 여기에 추가됩니다. -->
+                            
+                            <div>
+                                <label class="text-xs text-gray-600">환경 변수 (선택)</label>
+                                <div class="flex items-center gap-2 text-xs text-gray-500 px-1 mt-1">
+                                    <span class="flex-1">KEY</span>
+                                    <span class="flex-1">VALUE</span>
+                                    <span class="w-6"></span>
+                                </div>
+                                <div id="vercelEnvVarsContainer" class="space-y-2">
+                                    <!-- 동적 입력 필드가 여기에 추가됩니다. -->
+                                </div>
+                                <button type="button" id="addEnvVarBtn" class="text-sm font-medium text-blue-600 hover:underline mt-2">+ 추가</button>
                             </div>
-                            <button type="button" id="addEnvVarBtn" class="text-sm font-medium text-blue-600 hover:underline">+ 추가</button>
+
                             <button type="button" id="createVercelProjectBtn" class="btn-secondary !w-auto !py-1.5 !px-3">생성 및 연결</button>
                         </div>
                          <div class="p-3 bg-gray-50 rounded-lg space-y-2">
@@ -345,9 +358,9 @@
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
-                <input type="text" class="form-input env-key" placeholder="KEY">
-                <input type="text" class="form-input env-value" placeholder="VALUE">
-                <button type="button" class="remove-env-var-btn text-red-500 hover:text-red-700 text-2xl font-bold">&times;</button>
+                <input type="text" class="form-input env-key flex-1" placeholder="KEY">
+                <input type="text" class="form-input env-value flex-1" placeholder="VALUE">
+                <button type="button" class="remove-env-var-btn text-red-500 hover:text-red-700 font-bold text-2xl w-6 h-6 flex items-center justify-center">&times;</button>
             `;
             vercelEnvVarsContainer.appendChild(div);
         });
