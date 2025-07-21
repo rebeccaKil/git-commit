@@ -115,7 +115,6 @@
             <!-- 파일 편집기 -->
             <div id="editorSection" class="p-4 border rounded-lg hidden">
                 <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">3. 파일 수정</h2>
-                <p class="text-sm text-gray-600 mb-2">선택된 파일: <strong id="editingFileName"></strong></p>
                 <div id="editor-container"></div>
                 <input type="hidden" id="fileSha">
                 <input type="hidden" id="filePath">
@@ -179,6 +178,11 @@
                              <a href="#" onclick="alert('Vercel 프로젝트 > Settings > General > Project ID 에서 확인')" class="text-blue-600 hover:underline">(ID 찾는 방법)</a>
                         </label>
                         <input type="text" id="vercelProjectId" class="form-input" placeholder="Vercel 프로젝트 ID 입력">
+                        <!-- ===== 변경점: Production 배포 체크박스 추가 ===== -->
+                        <div class="flex items-center mt-2">
+                            <input id="isProduction" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="isProduction" class="ml-2 block text-sm text-gray-900">Production 배포</label>
+                        </div>
                         <button type="button" id="deployVercelBtn" class="btn-vercel !w-auto !py-1.5 !px-3 flex items-center justify-center">
                             <span id="deployButtonText">Vercel에 배포하기</span>
                             <div id="deployLoader" class="loader hidden ml-2"></div>
@@ -251,6 +255,7 @@ VALUE : tourvis(privia)</pre>
         const deployVercelBtn = document.getElementById('deployVercelBtn');
         const deployButtonText = document.getElementById('deployButtonText');
         const deployLoader = document.getElementById('deployLoader');
+        const isProductionCheckbox = document.getElementById('isProduction');
         
         // 환경 변수 모달 요소
         const envVarModal = document.getElementById('envVarModal');
@@ -462,7 +467,8 @@ VALUE : tourvis(privia)</pre>
                         action: 'trigger_deployment',
                         vercel_project_id: vercelProjectId.value,
                         owner, repo,
-                        branch: document.getElementById('branchName').value.trim() || 'main'
+                        branch: document.getElementById('branchName').value.trim() || 'main',
+                        is_production: isProductionCheckbox.checked // Production 배포 여부 전달
                     })
                 });
                 showResult(`Vercel 배포가 시작되었습니다: <a href="https://${result.deploymentUrl}" target="_blank" class="font-bold">배포 현황 보기</a>`, 'success');
